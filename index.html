@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Log Analyzer — Production Support Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --accent: #00d4aa;
+    --accent2: #7c3aed;
+    --red: #ff4757;
+    --orange: #ffa502;
+    --yellow: #ffd32a;
+    --green: #2ed573;
+    --blue: #1e90ff;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .logo-text span {
+    color: var(--accent);
+  }
+
+  .header-badge {
+    background: rgba(0, 212, 170, 0.1);
+    border: 1px solid rgba(0, 212, 170, 0.3);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 60px 32px 40px;
+    background: radial-gradient(ellipse at top, rgba(0,212,170,0.05) 0%, transparent 60%);
+  }
+
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    color: var(--text2);
+    font-size: 16px;
+    max-width: 560px;
+    margin: 0 auto 32px;
+    line-height: 1.6;
+  }
+
+  .stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 48px;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: var(--mono);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px 60px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* INPUT PANEL */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+  }
+
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  textarea {
+    width: 100%;
+    height: 320px;
+    background: var(--bg);
+    border: none;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 16px;
+    resize: none;
+    outline: none;
+    line-height: 1.6;
+  }
+
+  textarea::placeholder {
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+
+  .input-actions {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-family: var(--sans);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #00b894);
+    color: #000;
+    flex: 1;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,212,170,0.3);
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    color: var(--text);
+    border-color: var(--accent);
+  }
+
+  .btn-upload {
+    background: var(--surface2);
+    color: var(--accent);
+    border: 1px solid rgba(0,212,170,0.3);
+  }
+
+  /* RESULTS PANEL */
+  .results-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .results-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 480px;
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 320px;
+    color: var(--text2);
+    text-align: center;
+    gap: 12px;
+  }
+
+  .empty-icon {
+    font-size: 48px;
+    opacity: 0.3;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+  }
+
+  /* SUMMARY CARDS */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .summary-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .summary-card .num {
+    font-size: 24px;
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+
+  .summary-card .label {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  .critical { color: var(--red); }
+  .warning { color: var(--orange); }
+  .info-color { color: var(--blue); }
+  .success { color: var(--green); }
+
+  /* ERROR ITEMS */
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title:first-of-type {
+    margin-top: 0;
+  }
+
+  .error-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .error-item:hover {
+    border-left-color: var(--accent);
+  }
+
+  .error-item.critical { border-left-color: var(--red); }
+  .error-item.warning { border-left-color: var(--orange); }
+  .error-item.info { border-left-color: var(--blue); }
+
+  .error-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .error-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--mono);
+    text-transform: uppercase;
+  }
+
+  .badge-critical { background: rgba(255,71,87,0.15); color: var(--red); }
+  .badge-warning { background: rgba(255,165,2,0.15); color: var(--orange); }
+  .badge-info { background: rgba(30,144,255,0.15); color: var(--blue); }
+
+  .error-time {
+    font-size: 11px;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+
+  .error-msg {
+    font-size: 13px;
+    color: var(--text);
+    font-family: var(--mono);
+    margin-bottom: 6px;
+    word-break: break-all;
+  }
+
+  .error-rca {
+    font-size: 12px;
+    color: var(--accent);
+    background: rgba(0,212,170,0.05);
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  .error-rca span {
+    color: var(--text2);
+    font-weight: 600;
+  }
+
+  /* TIMELINE */
+  .timeline {
+    position: relative;
+    padding-left: 20px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -17px;
+    top: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+
+  .timeline-item.critical::before { background: var(--red); }
+  .timeline-item.warning::before { background: var(--orange); }
+
+  .timeline-time {
+    font-size: 11px;
+    color: var(--text2);
+    font-family: var(--mono);
+    margin-bottom: 4px;
+  }
+
+  .timeline-msg {
+    font-size: 12px;
+    color: var(--text);
+    font-family: var(--mono);
+  }
+
+  /* RCA SECTION */
+  .rca-box {
+    background: linear-gradient(135deg, rgba(0,212,170,0.05), rgba(124,58,237,0.05));
+    border: 1px solid rgba(0,212,170,0.2);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 8px;
+  }
+
+  .rca-box h4 {
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .rca-box p {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .rca-steps {
+    margin-top: 10px;
+    padding-left: 16px;
+  }
+
+  .rca-steps li {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 4px;
+    line-height: 1.5;
+  }
+
+  /* LOADING */
+  .loading {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 320px;
+    gap: 16px;
+  }
+
+  .loading.active {
+    display: flex;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    color: var(--text2);
+    font-size: 14px;
+    font-family: var(--mono);
+  }
+
+  /* FULL WIDTH BOTTOM SECTION */
+  .bottom-section {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px 60px;
+  }
+
+  /* SAMPLE LOGS */
+  .samples {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .sample-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .sample-btn:hover {
+    border-color: var(--accent);
+    background: rgba(0,212,170,0.05);
+  }
+
+  .sample-type {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .sample-desc {
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 32px;
+    text-align: center;
+    color: var(--text2);
+    font-size: 13px;
+  }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 28px; }
+    .stats-row { gap: 20px; }
+    .samples { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* EXPORT BTN */
+  .export-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.2s;
+  }
+
+  .export-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  #fileInput { display: none; }
+
+  .char-count {
+    font-size: 11px;
+    color: var(--text2);
+    font-family: var(--mono);
+    margin-left: auto;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <div class="logo-text">AI <span>Log</span> Analyzer</div>
+  </div>
+  <div class="header-badge">Production Support Tool v1.0</div>
+</header>
+
+<div class="hero">
+  <h1>Analyze Logs.<br/><span>Find Root Cause. Fast.</span></h1>
+  <p>Paste your application logs and instantly get error detection, severity classification, root cause analysis, and investigation steps — built for production support engineers.</p>
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-num">5x</div>
+      <div class="stat-label">Faster Investigation</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">4</div>
+      <div class="stat-label">Severity Levels</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Browser Based</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">RCA</div>
+      <div class="stat-label">Auto Generated</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <div class="dot"></div>
+        Log Input
+      </div>
+      <span class="char-count" id="charCount">0 lines</span>
+    </div>
+    <textarea id="logInput" placeholder="Paste your logs here...
+
+Example:
+2024-01-15 10:23:45 ERROR Database connection timeout after 30s
+2024-01-15 10:23:46 CRITICAL NullPointerException in UserService.java:142
+2024-01-15 10:23:47 WARN Memory usage at 87% threshold
+2024-01-15 10:23:48 INFO Retry attempt 1 of 3
+2024-01-15 10:23:49 ERROR Failed to connect to Redis cache
+2024-01-15 10:23:50 CRITICAL Application crashed - OutOfMemoryError"></textarea>
+    <div class="input-actions">
+      <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">📁 Upload File</button>
+      <input type="file" id="fileInput" accept=".log,.txt,.json" onchange="loadFile(event)"/>
+      <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+      <button class="btn btn-primary" onclick="analyzeLogs()">🔍 Analyze Logs</button>
+    </div>
+  </div>
+
+  <!-- RESULTS PANEL -->
+  <div class="results-panel panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <div class="dot"></div>
+        Analysis Results
+      </div>
+      <button class="export-btn" onclick="exportReport()" id="exportBtn" style="display:none">📄 Export Report</button>
+    </div>
+    <div class="results-body" id="resultsBody">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📋</div>
+        <p>Paste your logs on the left<br/>and click <strong>Analyze Logs</strong></p>
+      </div>
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Analyzing logs...</div>
+      </div>
+      <div id="results" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SAMPLE LOGS SECTION -->
+<div class="bottom-section">
+  <div class="section-title">⚡ Try with Sample Logs</div>
+  <div class="samples">
+    <div class="sample-btn" onclick="loadSample('database')">
+      <div class="sample-type" style="color: var(--red)">🗄️ Database Error</div>
+      <div class="sample-desc">Connection timeouts, query failures, deadlocks</div>
+    </div>
+    <div class="sample-btn" onclick="loadSample('aws')">
+      <div class="sample-type" style="color: var(--orange)">☁️ AWS CloudWatch</div>
+      <div class="sample-desc">Lambda timeouts, S3 access errors, ECS failures</div>
+    </div>
+    <div class="sample-btn" onclick="loadSample('api')">
+      <div class="sample-type" style="color: var(--blue)">🔌 API / Application</div>
+      <div class="sample-desc">HTTP 500 errors, authentication failures, timeouts</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Built by <a href="https://github.com/vidyachoki" target="_blank">Vidya Rani</a> — Production Support Engineer & AI Automation Specialist &nbsp;|&nbsp;
+  <a href="https://www.linkedin.com/in/vidya-rani-b31a06358" target="_blank">LinkedIn</a> &nbsp;|&nbsp;
+  <a href="https://github.com/vidyachoki" target="_blank">GitHub</a>
+</footer>
+
+<script>
+const SAMPLE_LOGS = {
+  database: `2024-03-15 08:12:33 INFO  Application started successfully on port 8080
+2024-03-15 08:14:21 INFO  User login: user_id=4821 ip=192.168.1.45
+2024-03-15 08:15:02 WARN  Slow query detected: SELECT * FROM orders WHERE user_id=4821 took 4823ms
+2024-03-15 08:15:10 ERROR Database connection pool exhausted - max connections: 100
+2024-03-15 08:15:11 ERROR Failed to acquire connection after 30000ms timeout
+2024-03-15 08:15:12 CRITICAL com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Connection refused
+2024-03-15 08:15:13 ERROR Transaction rolled back: java.sql.SQLException: Deadlock found
+2024-03-15 08:15:15 WARN  Retry attempt 1/3 for DB connection
+2024-03-15 08:15:18 WARN  Retry attempt 2/3 for DB connection  
+2024-03-15 08:15:22 CRITICAL Retry attempt 3/3 failed - Database unreachable
+2024-03-15 08:15:23 ERROR NullPointerException: Cannot invoke method on null object at UserRepository.java:89
+2024-03-15 08:15:25 CRITICAL Service degraded - falling back to cache
+2024-03-15 08:16:01 WARN  Cache hit ratio dropped to 23% - possible cache invalidation
+2024-03-15 08:16:45 INFO  DBA alerted - ticket created PSH-4421
+2024-03-15 08:18:00 INFO  DB connection restored - failover to replica successful`,
+
+  aws: `2024-03-15 09:00:01 INFO  Lambda function survey-processor invoked: RequestId=abc-123
+2024-03-15 09:00:02 INFO  Processing batch of 450 survey responses
+2024-03-15 09:00:15 WARN  Lambda memory usage: 487MB / 512MB (95%)
+2024-03-15 09:00:29 ERROR Task timed out after 30.00 seconds RequestId=abc-123
+2024-03-15 09:00:29 CRITICAL Lambda TIMEOUT - survey-processor function exceeded limit
+2024-03-15 09:01:00 INFO  Lambda function survey-processor invoked: RequestId=def-456
+2024-03-15 09:01:12 ERROR S3 Access Denied: s3://prod-survey-bucket/exports/march-2024/
+2024-03-15 09:01:12 ERROR NoSuchBucketException: The specified bucket does not exist
+2024-03-15 09:01:13 CRITICAL ECS task stopped unexpectedly: exit code 137 (OOM Killed)
+2024-03-15 09:01:14 ERROR Container survey-api crashed - OOMKilled: true
+2024-03-15 09:01:20 WARN  CloudWatch alarm triggered: CPUUtilization > 90% for 5 minutes
+2024-03-15 09:01:25 WARN  Auto Scaling: launching new ECS task in us-east-1a
+2024-03-15 09:02:00 ERROR WAF rule blocked request: Rate limit exceeded from IP 203.45.67.89
+2024-03-15 09:02:15 CRITICAL DynamoDB ProvisionedThroughputExceededException on table survey_responses
+2024-03-15 09:03:00 INFO  New ECS task healthy - traffic routing resumed`,
+
+  api: `2024-03-15 10:30:00 INFO  POST /api/v2/surveys/submit - user_id=9921 survey_id=S-4401
+2024-03-15 10:30:01 WARN  Slow response: /api/v2/surveys/submit took 8432ms (threshold: 3000ms)
+2024-03-15 10:30:02 ERROR HTTP 500 Internal Server Error: /api/v2/payment/process
+2024-03-15 10:30:02 ERROR PaymentGatewayException: Connection refused to payment provider
+2024-03-15 10:30:03 CRITICAL HTTP 503 Service Unavailable: /api/v2/auth/login
+2024-03-15 10:30:04 ERROR JWT token validation failed: Token expired at 2024-03-15T10:25:00Z
+2024-03-15 10:30:05 ERROR HTTP 401 Unauthorized: Invalid or expired authentication token
+2024-03-15 10:30:10 WARN  Rate limit approaching: 850/1000 requests per minute
+2024-03-15 10:30:15 CRITICAL HTTP 429 Too Many Requests: Rate limit exceeded
+2024-03-15 10:30:20 ERROR Redis cache connection failed: ECONNREFUSED 127.0.0.1:6379
+2024-03-15 10:30:21 ERROR Falling back to database - cache unavailable
+2024-03-15 10:30:25 WARN  Database response time degraded: avg 4200ms (normal: 200ms)
+2024-03-15 10:30:30 CRITICAL Cascading failure detected - multiple services impacted
+2024-03-15 10:30:35 ERROR Health check failed: /api/health returning 500
+2024-03-15 10:30:40 INFO  PagerDuty alert triggered - on-call engineer notified`
+};
+
+const RCA_MAP = {
+  'connection refused':    { rca: 'Service or database is down or port is blocked. Check if the target service is running and firewall rules allow the connection.', steps: ['Verify service status', 'Check port accessibility (telnet/netstat)', 'Review firewall/security group rules', 'Check service logs for crash reason'] },
+  'timeout':               { rca: 'Service took too long to respond. Could be high load, slow query, or network latency.', steps: ['Check CPU/Memory usage on target server', 'Look for slow queries in DB', 'Verify network latency', 'Check thread pool exhaustion'] },
+  'nullpointerexception':  { rca: 'Code tried to use an object that was null. Usually a missing null check or unexpected empty data.', steps: ['Check the stack trace for exact line', 'Verify data being passed to the method', 'Check if DB returned empty result', 'Add null validation in code'] },
+  'outofmemory':           { rca: 'Application ran out of heap memory. Memory leak or load spike.', steps: ['Check JVM heap settings (-Xmx)', 'Look for memory leak in code', 'Analyze heap dump', 'Review recent deployments for memory-heavy changes'] },
+  'deadlock':              { rca: 'Two DB transactions waiting on each other causing a lock. Usually from concurrent updates to the same rows.', steps: ['Identify tables involved in deadlock', 'Review transaction order in code', 'Add proper indexing', 'Consider optimistic locking strategy'] },
+  'connection pool':       { rca: 'All database connections are in use. Application cannot get a new connection.', steps: ['Check max_connections setting', 'Look for connection leaks in code', 'Review slow queries holding connections', 'Increase pool size if needed'] },
+  'oom':                   { rca: 'Container killed by OS due to out-of-memory. Memory limit too low or memory leak.', steps: ['Check container memory limits', 'Review recent code changes', 'Analyze memory usage patterns', 'Consider increasing memory allocation'] },
+  's3':                    { rca: 'S3 bucket access issue. Could be wrong bucket name, missing permissions, or bucket deleted.', steps: ['Verify bucket name and region', 'Check IAM role permissions', 'Confirm bucket exists', 'Review S3 bucket policy'] },
+  'lambda':                { rca: 'AWS Lambda function failed. Could be timeout, memory, or code error.', steps: ['Check function timeout setting', 'Review memory allocation', 'Check CloudWatch logs for function', 'Verify trigger configuration'] },
+  '401':                   { rca: 'Authentication failed. Token is missing, expired, or invalid.', steps: ['Verify token expiry time', 'Check token generation logic', 'Confirm auth service is running', 'Review recent auth changes'] },
+  '500':                   { rca: 'Server-side error. Application threw an unhandled exception.', steps: ['Check application error logs', 'Identify exact exception in stack trace', 'Review recent deployments', 'Check dependent service health'] },
+  '503':                   { rca: 'Service temporarily unavailable. Could be overloaded or down.', steps: ['Check service health status', 'Review CPU/memory usage', 'Check load balancer configuration', 'Verify auto-scaling is working'] },
+  '429':                   { rca: 'Rate limit exceeded. Too many requests in a short time.', steps: ['Identify source of high traffic', 'Check for bot traffic or abuse', 'Review rate limit thresholds', 'Implement exponential backoff'] },
+  'redis':                 { rca: 'Redis cache server is unreachable. Could be down or wrong config.', steps: ['Verify Redis service is running', 'Check connection string and port', 'Review Redis memory usage', 'Check network connectivity to Redis'] },
+  'jwt':                   { rca: 'JWT token is expired or invalid. Session management issue.', steps: ['Check token expiry time configuration', 'Verify server time synchronization', 'Review token refresh logic', 'Check if secret key changed'] },
+  'dynamodb':              { rca: 'DynamoDB throughput exceeded. Read/write capacity units exhausted.', steps: ['Check current RCU/WCU usage', 'Enable auto-scaling on table', 'Review query patterns for optimization', 'Consider on-demand capacity mode'] },
+  'waf':                   { rca: 'WAF blocked the request. Could be rate limiting, IP blocking, or rule match.', steps: ['Check WAF logs for rule triggered', 'Verify if IP is legitimately blocked', 'Review WAF rule configuration', 'Whitelist IP if needed'] },
+  'cache':                 { rca: 'Cache service unavailable causing database fallback and performance degradation.', steps: ['Check cache service health', 'Review cache eviction policies', 'Monitor DB load increase', 'Restart cache service if needed'] },
+  'slow query':            { rca: 'Database query is taking too long. Missing index or large data scan.', steps: ['Run EXPLAIN on the slow query', 'Check for missing indexes', 'Review query for full table scans', 'Consider query optimization or indexing'] },
+  'payment':               { rca: 'Payment gateway connection failed. Could be provider outage or wrong config.', steps: ['Check payment provider status page', 'Verify API credentials', 'Check network connectivity to gateway', 'Review recent credential changes'] }
+};
+
+function detectSeverity(line) {
+  const l = line.toUpperCase();
+  if (l.includes('CRITICAL') || l.includes('FATAL') || l.includes('EMERGENCY')) return 'critical';
+  if (l.includes('ERROR')) return 'warning';
+  if (l.includes('WARN') || l.includes('WARNING')) return 'info';
+  return null;
+}
+
+function extractTime(line) {
+  const match = line.match(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/);
+  return match ? match[0] : '';
+}
+
+function getRCA(line) {
+  const l = line.toLowerCase();
+  for (const [key, val] of Object.entries(RCA_MAP)) {
+    if (l.includes(key)) return val;
+  }
+  return null;
+}
+
+function analyzeLogs() {
+  const input = document.getElementById('logInput').value.trim();
+  if (!input) {
+    alert('Please paste some logs first!');
+    return;
+  }
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('loading').classList.add('active');
+  document.getElementById('exportBtn').style.display = 'none';
+
+  setTimeout(() => {
+    const lines = input.split('\n').filter(l => l.trim());
+    const errors = { critical: [], warning: [], info: [] };
+    const timeline = [];
+    const rcaSet = new Map();
+
+    lines.forEach(line => {
+      const sev = detectSeverity(line);
+      if (!sev) return;
+
+      const time = extractTime(line);
+      const rca = getRCA(line);
+      const obj = { line, time, rca };
+
+      errors[sev].push(obj);
+      timeline.push({ line, time, sev });
+
+      if (rca) {
+        const key = line.toLowerCase().substring(0, 60);
+        if (!rcaSet.has(key)) rcaSet.set(key, { line, rca, sev });
+      }
+    });
+
+    const total = errors.critical.length + errors.warning.length + errors.info.length;
+    const healthy = lines.length - total;
+
+    // Build HTML
+    let html = '';
+
+    // Summary cards
+    html += `<div class="summary-grid">
+      <div class="summary-card"><div class="num critical">${errors.critical.length}</div><div class="label">Critical</div></div>
+      <div class="summary-card"><div class="num warning">${errors.warning.length}</div><div class="label">Errors</div></div>
+      <div class="summary-card"><div class="num info-color">${errors.info.length}</div><div class="label">Warnings</div></div>
+      <div class="summary-card"><div class="num success">${healthy}</div><div class="label">Normal Lines</div></div>
+    </div>`;
+
+    // RCA Section
+    if (rcaSet.size > 0) {
+      html += `<div class="section-title">🧠 Root Cause Analysis</div>`;
+      rcaSet.forEach(({ line, rca, sev }) => {
+        const shortLine = line.length > 80 ? line.substring(0, 80) + '...' : line;
+        html += `<div class="rca-box">
+          <h4>🔍 ${shortLine}</h4>
+          <p>${rca.rca}</p>
+          <ul class="rca-steps">
+            ${rca.steps.map(s => `<li>→ ${s}</li>`).join('')}
+          </ul>
+        </div>`;
+      });
+    }
+
+    // Critical errors
+    if (errors.critical.length > 0) {
+      html += `<div class="section-title">🔴 Critical Issues (${errors.critical.length})</div>`;
+      errors.critical.forEach(({ line, time, rca }) => {
+        html += `<div class="error-item critical">
+          <div class="error-top">
+            <span class="error-badge badge-critical">CRITICAL</span>
+            <span class="error-time">${time}</span>
+          </div>
+          <div class="error-msg">${escHtml(line)}</div>
+          ${rca ? `<div class="error-rca"><span>RCA:</span> ${rca.rca}</div>` : ''}
+        </div>`;
+      });
+    }
+
+    // Errors
+    if (errors.warning.length > 0) {
+      html += `<div class="section-title">🟠 Errors (${errors.warning.length})</div>`;
+      errors.warning.forEach(({ line, time, rca }) => {
+        html += `<div class="error-item warning">
+          <div class="error-top">
+            <span class="error-badge badge-warning">ERROR</span>
+            <span class="error-time">${time}</span>
+          </div>
+          <div class="error-msg">${escHtml(line)}</div>
+          ${rca ? `<div class="error-rca"><span>RCA:</span> ${rca.rca}</div>` : ''}
+        </div>`;
+      });
+    }
+
+    // Timeline
+    if (timeline.length > 0) {
+      html += `<div class="section-title">⏱️ Error Timeline</div>`;
+      html += `<div class="timeline">`;
+      timeline.slice(0, 10).forEach(({ line, time, sev }) => {
+        const shortLine = line.length > 80 ? line.substring(0, 80) + '...' : line;
+        html += `<div class="timeline-item ${sev}">
+          <div class="timeline-time">${time}</div>
+          <div class="timeline-msg">${escHtml(shortLine)}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    if (total === 0) {
+      html = `<div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <p><strong style="color:var(--green)">No errors detected!</strong><br/>All log lines look healthy.</p>
+      </div>`;
+    }
+
+    document.getElementById('loading').classList.remove('active');
+    document.getElementById('results').innerHTML = html;
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('exportBtn').style.display = 'block';
+  }, 1200);
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clearAll() {
+  document.getElementById('logInput').value = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
+  document.getElementById('exportBtn').style.display = 'none';
+  document.getElementById('charCount').textContent = '0 lines';
+}
+
+function loadSample(type) {
+  document.getElementById('logInput').value = SAMPLE_LOGS[type];
+  updateCount();
+  analyzeLogs();
+}
+
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('logInput').value = e.target.result;
+    updateCount();
+  };
+  reader.readAsText(file);
+}
+
+function updateCount() {
+  const lines = document.getElementById('logInput').value.split('\n').filter(l => l.trim()).length;
+  document.getElementById('charCount').textContent = lines + ' lines';
+}
+
+function exportReport() {
+  const results = document.getElementById('results').innerText;
+  const blob = new Blob([`AI LOG ANALYZER REPORT\nGenerated: ${new Date().toLocaleString()}\n\n${results}`], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `log-analysis-${Date.now()}.txt`;
+  a.click();
+}
+
+document.getElementById('logInput').addEventListener('input', updateCount);
+</script>
+</body>
+</html>
